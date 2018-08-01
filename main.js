@@ -76,7 +76,6 @@ function draw() {
 	let y2 = map(lineY[1], 0, 1, height, 0);
 	
 	line(x1, y1, x2, y2);
-	
 
 	//console.log(tf.memory().numTensors);
 }
