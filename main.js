@@ -1,14 +1,31 @@
 let xs = [];
 let ys = [];
-
 let m, b;
 
-const learningRate = 0.3;
+//Reset button event handler
+let resetBtn = document.querySelector('.reset');
+resetBtn.addEventListener('click', function() {
+	xs = [];
+	ys = [];
+	m = tf.variable(tf.scalar(0));
+	b = tf.variable(tf.scalar(0.5));
+});
+
+const learningRate = 0.5;
 const optimizer = tf.train.sgd(learningRate);
 
+//Initialize canvas
 function setup() {
-	createCanvas(400, 400);
+	let canvas = createCanvas(400, 400);
 	background(0);
+	canvas.parent('sketch-holder');
+	canvas.mousePressed(() => {
+			let x = map(mouseX, 0, width, 0, 1);
+			let y = map(mouseY, 0, height, 1, 0);
+			xs.push(x);
+			ys.push(y);
+		}
+	);
 	
 	m = tf.variable(tf.scalar(0));
 	b = tf.variable(tf.scalar(0.5));
@@ -26,31 +43,28 @@ function loss(pred, labels) {
 	return pred.sub(y_t).square().mean();
 }
 
-function mousePressed() {
-	let x = map(mouseX, 0, width, 0, 1);
-	let y = map(mouseY, 0, height, 1, 0);
-	xs.push(x);
-	ys.push(y);
-}
+
 
 function draw() {
 	background(0);
 	stroke(255);
 	strokeWeight(4);
 	
+	//Train linear regression
 	tf.tidy(() => {
-		if(xs.length > 0) {
+		if((xs.length > 0) && (ys.length > 0)) {
 			optimizer.minimize(function() {
 				return loss(predict(xs), ys);
 			});
 		}});
-	
+	//Draw points
 	for (let i = 0; i < xs.length; i++) {
 		let px = map(xs[i], 0, 1, 0, width);
 		let py = map(ys[i], 0, 1, height, 0);
 		point(px, py);
 	}
 	
+	//Draw line
 	let lineX = [0, 1];
 	let yPred = tf.tidy(() => predict(lineX));
 	let lineY = yPred.dataSync();
@@ -63,6 +77,6 @@ function draw() {
 	
 	line(x1, y1, x2, y2);
 	
+
 	//console.log(tf.memory().numTensors);
-	
 }
