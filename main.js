@@ -2,17 +2,22 @@ let xs = [];
 let ys = [];
 let m, b;
 
+
+let resetFlag = false;
 //Reset button event handler
 let resetBtn = document.querySelector('.reset');
+//Learning Rate
+let rangeSlider = document.querySelector('.stroke');
+
+let optimizer = tf.train.sgd(0.1);
+
 resetBtn.addEventListener('click', function() {
 	xs = [];
 	ys = [];
-	m = tf.variable(tf.scalar(0));
-	b = tf.variable(tf.scalar(0.5));
+	resetFlag = true;
+	// m = tf.variable(tf.scalar(0));
+	// b = tf.variable(tf.scalar(0.5));
 });
-
-const learningRate = 0.5;
-const optimizer = tf.train.sgd(learningRate);
 
 //Initialize canvas
 function setup() {
@@ -26,7 +31,7 @@ function setup() {
 			ys.push(y);
 		}
 	);
-	
+
 	m = tf.variable(tf.scalar(0));
 	b = tf.variable(tf.scalar(0.5));
 }
@@ -48,8 +53,10 @@ function loss(pred, labels) {
 function draw() {
 	background(0);
 	stroke(255);
-	strokeWeight(4);
-	
+	let strk = map(rangeSlider.value, 0, 100, 1, 10);
+	strokeWeight(strk);
+	document.querySelector('.strokewt').textContent = Math.round(strk);
+
 	//Train linear regression
 	tf.tidy(() => {
 		if((xs.length > 0) && (ys.length > 0)) {
@@ -63,19 +70,42 @@ function draw() {
 		let py = map(ys[i], 0, 1, height, 0);
 		point(px, py);
 	}
-	
+
 	//Draw line
 	let lineX = [0, 1];
 	let yPred = tf.tidy(() => predict(lineX));
 	let lineY = yPred.dataSync();
 	yPred.dispose();
-	
+
 	let x1 = map(lineX[0], 0, 1, 0, width);
 	let x2 = map(lineX[1], 0, 1, 0, width);
 	let y1 = map(lineY[0], 0, 1, height, 0);
 	let y2 = map(lineY[1], 0, 1, height, 0);
-	
-	line(x1, y1, x2, y2);
 
+	line(x1, y1, x2, y2);
+	if (resetFlag == true) {
+		tf.tidy(() => {
+			if ((Math.abs(m.dataSync()[0]) >= 0.001) || (Math.abs(b.dataSync()[0] - 0.5) >= 0.02)) {
+				if (m.dataSync()[0] < 0.0) {
+					m.assign(m.div(2));
+				}
+				else {
+					m.assign(m.div(2));
+				}
+				if (b.dataSync()[0] < 0.5) {
+					b.assign(b.add(0.015));
+					//console.log(b.dataSync());
+				}
+				else {
+					b.assign(b.sub(0.015));
+					//console.log(b.dataSync());
+				}
+			}
+			else {
+				resetFlag = false;
+			}
+		});
+	}
+	//console.log(m.dataSync());
 	//console.log(tf.memory().numTensors);
 }
